@@ -59,19 +59,22 @@ class FileFinder(QtCore.QObject):
                 self._name_map[file_key] = name
             return name
 
-        def _generate_name(self, path, template, fields=None):
+        def _generate_name(self, path, template, input_fields=None):
             """
             Return the 'name' to be used for the file - if possible
             this will return a 'versionless' name
             """
             # first, extract the fields from the path using the template:
-            fields = fields.copy() if fields else template.get_fields(path)
+            fields = input_fields if input_fields else template.get_fields(path)
             if "name" in fields and fields["name"]:
                 # well, that was easy!
                 name = fields["name"]
+            elif "pub_name" in fields and fields["pub_name"]:
+                # we use "pub_name" key instead of "name" for publishes
+                name = fields["pub_name"]
             else:
                 # find out if version is used in the file name:
-                template_name, _ = os.path.splitext(os.path.basename(template.definition))
+                template_name, _ = os.path.splitext(os.path.basename(template.definition))                
                 version_in_name = "{version}" in template_name
             
                 # extract the file name from the path:
@@ -92,8 +95,8 @@ class FileFinder(QtCore.QObject):
                     
                     # now use this dummy version and rebuild the path
                     fields["version"] = dummy_version
-                    path = template.apply_fields(fields)
-                    name, _ = os.path.splitext(os.path.basename(path))
+                    path_from_template = template.apply_fields(fields)
+                    name, _ = os.path.splitext(os.path.basename(path_from_template))
                     
                     # we can now locate the version in the name and remove it
                     dummy_version_str = version_key.str_from_value(dummy_version)
@@ -121,7 +124,7 @@ class FileFinder(QtCore.QObject):
                         zero_version_str = version_key.str_from_value(0)        
                         new_version_str = "#" * len(zero_version_str)
                         name = name.replace(dummy_version_str, new_version_str)
-            
+
             return name    
 
     def __init__(self, parent=None):
@@ -167,12 +170,12 @@ class FileFinder(QtCore.QObject):
         # find all work & publish files and filter out any that should be ignored:
         work_files = self._find_work_files(context, work_template, version_compare_ignore_fields)
         filtered_work_files = self._filter_work_files(work_files, valid_file_extensions)
-        
+
         published_files = self._find_publishes(publish_filters)
         filtered_published_files = self._filter_publishes(published_files, 
                                                           publish_template, 
                                                           valid_file_extensions)
-        
+
         # turn these into FileItem instances:
         name_map = FileFinder._FileNameMap()
         work_file_item_details = self._process_work_files(filtered_work_files, 
@@ -319,13 +322,16 @@ class FileFinder(QtCore.QObject):
             # to overrwrite fields that are being ignored when comparing work files
             publish_fields = publish_template.get_fields(publish_path)
             wp_fields = publish_fields.copy()
+            # publishes uses 'pub_name' where as work files use 'name'
+            if 'pub_name' in publish_fields and publish_fields['pub_name']:
+                wp_fields['name'] = publish_fields['pub_name']
             for k, v in ctx_fields.iteritems():
                 if k not in version_compare_ignore_fields:
                     wp_fields[k] = v
             
             # build the unique file key for the publish path.  All files that share the same key are considered
             # to be different versions of the same file.
-            file_key = FileItem.build_file_key(wp_fields, work_template, 
+            file_key = FileItem.build_file_key(wp_fields, publish_template, 
                                                version_compare_ignore_fields)
             if filter_file_key and file_key != filter_file_key:
                 # we can ignore this file completely!
@@ -339,7 +345,7 @@ class FileFinder(QtCore.QObject):
                 # unable to generate a work path - this means we are probably missing a field so it's going to
                 # be a problem matching this publish up with its corresponding work file!
                 work_path = ""
-            
+
             # copy common fields from sg_publish:
             #
             file_details = dict([(k, v) for k, v in sg_publish.iteritems() if k != "path"])
