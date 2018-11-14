@@ -331,7 +331,7 @@ class FileFinder(QtCore.QObject):
             
             # build the unique file key for the publish path.  All files that share the same key are considered
             # to be different versions of the same file.
-            file_key = FileItem.build_file_key(wp_fields, publish_template, 
+            file_key = FileItem.build_file_key(wp_fields, work_template, 
                                                version_compare_ignore_fields)
             if filter_file_key and file_key != filter_file_key:
                 # we can ignore this file completely!
