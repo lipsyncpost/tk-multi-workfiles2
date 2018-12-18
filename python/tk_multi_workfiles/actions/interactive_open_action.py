@@ -318,7 +318,11 @@ class InteractiveOpenAction(OpenFileAction):
             
                 # add next version to fields:                
                 fields["version"] = new_version
-                
+
+                # # we use "pub_name" key instead of "name" for publishes but need a "name" key for work files
+                if 'pub_name' in fields and fields['pub_name'] and 'name' not in fields:
+                    fields['name'] = fields['pub_name']
+
                 # construct work path:
                 work_path = env.work_template.apply_fields(fields)
             except Exception, e:
