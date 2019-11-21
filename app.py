@@ -27,6 +27,10 @@ class MultiWorkFiles(sgtk.platform.Application):
         self._tk_multi_workfiles = self.import_module("tk_multi_workfiles")
         self.__is_pyside_unstable = None
 
+        if not self.engine.has_ui:
+            self.logger.debug("The engine reports that there is no UI. Workfiles2 will not continue initializing.")
+            return
+
         if self.engine.name == "tk-mari":
             # Mari doesn't have the concept of a current scene so this app shouldn't
             # provide any commands!
@@ -80,7 +84,7 @@ class MultiWorkFiles(sgtk.platform.Application):
         # currently, we have done QA on the following engines:
         SUPPORTED_ENGINES = ["tk-nuke", "tk-maya", "tk-3dsmax"]
 
-        if self.engine.has_ui and not hasattr(sgtk, "_tk_multi_workfiles2_launch_at_startup"):
+        if not hasattr(sgtk, "_tk_multi_workfiles2_launch_at_startup"):
 
             # this is the very first time we have run this application
             sgtk._tk_multi_workfiles2_launch_at_startup = True
@@ -149,9 +153,10 @@ class MultiWorkFiles(sgtk.platform.Application):
         """
         Color used to display errors in the UI.
 
-        :returns: An RGBA tuple.
+        :returns: An RGBA tuple of int (0-255).
         """
-        return sgtk.platform.qt.QtGui.QColor(self.style_constants["SG_ALERT_COLOR"]).toTuple()
+        color = sgtk.platform.qt.QtGui.QColor(self.style_constants["SG_ALERT_COLOR"])
+        return color.red(), color.green(), color.blue(), color.alpha()
 
 
 class DebugWrapperShotgun(object):
