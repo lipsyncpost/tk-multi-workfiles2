@@ -123,6 +123,7 @@ class Ui_FileSaveForm(object):
         self.horizontalLayout_2.setSpacing(-1)
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
         self.version_spinner = QtGui.QSpinBox(FileSaveForm)
+        self.version_spinner.setMaximum(9999999)
         self.version_spinner.setObjectName("version_spinner")
         self.version_spinner.setMinimum(1)
         self.version_spinner.setMaximum(999)        
